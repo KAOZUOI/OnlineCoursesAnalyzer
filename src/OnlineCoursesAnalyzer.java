@@ -42,6 +42,12 @@ public class OnlineCoursesAnalyzer {
         }
     }
 
+    public static void main(String[] args){
+        String local = "D:\\IDEAproject\\OnlineCoursesAnalyzer\\resources\\local.csv";
+        OnlineCoursesAnalyzer coursesAnalyzer = new OnlineCoursesAnalyzer(local);
+        Map<String, List<List<String>>> test = coursesAnalyzer.getCourseListOfInstructor();
+        System.out.println(test);
+    }
     //1
     public Map<String, Integer> getPtcpCountByInst() {
         Stream<Course> courseStream = courses.stream();
@@ -52,12 +58,40 @@ public class OnlineCoursesAnalyzer {
 
     //2
     public Map<String, Integer> getPtcpCountByInstAndSubject() {
-        return null;
+        return courses.stream()
+                .collect(Collectors.groupingBy(
+                        course -> course.getInstitution() + "-" + course.getSubject(),
+                        Collectors.summingInt(Course::getParticipants)
+                ))
+                .entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue(Comparator.reverseOrder())
+                        .thenComparing(Map.Entry.comparingByKey()))
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (e1, e2) -> e1,
+                        LinkedHashMap::new
+                ));
     }
-
     //3
     public Map<String, List<List<String>>> getCourseListOfInstructor() {
-        return null;
+        Map<String, List<List<String>>> result = new HashMap<>();
+        for (Course course : courses) {
+            String[] instructors = course.getInstructors().split(", ");
+            for (String instructor : instructors) {
+                result.putIfAbsent(instructor, new ArrayList<>(Arrays.asList(new ArrayList<>(), new ArrayList<>())));
+                if (course.isIndependentlyResponsible()) {
+                    result.get(instructor).get(0).add(course.getTitle());
+                } else {
+                    result.get(instructor).get(1).add(course.getTitle());
+                }
+            }
+        }
+        for (List<List<String>> lists : result.values()) {
+            lists.get(0).sort(String::compareTo);
+            lists.get(1).sort(String::compareTo);
+        }
+        return result;
     }
 
     //4
@@ -78,18 +112,17 @@ public class OnlineCoursesAnalyzer {
 }
 
 class Course {
-
-
     String institution;
     String number;
     Date launchDate;
+
     String title;
+
     String instructors;
     String subject;
+
     int year;
     int honorCode;
-
-
 
     int participants;
     int audited;
@@ -152,7 +185,21 @@ class Course {
     public int getParticipants() {
         return participants;
     }
+    public String getSubject() {
+        return subject;
+    }
+    public String getInstructors() {
+        return instructors;
+    }
+    public String getTitle() {
+        return title;
+    }
     public static int compareByIns(Course c1, Course c2) {
         return c1.institution.compareTo(c2.institution);
+    }
+
+    public boolean isIndependentlyResponsible() {
+        String[] instructor = instructors.split(", ");
+        return instructor.length == 1;
     }
 }
