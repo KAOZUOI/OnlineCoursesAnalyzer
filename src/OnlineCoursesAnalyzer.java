@@ -123,19 +123,108 @@ public class OnlineCoursesAnalyzer {
 
     //5
     public List<String> searchCourses(String courseSubject, double percentAudited, double totalCourseHours) {
-        return null;
+        List<Course> filteredCourses = courses.stream()
+                .filter(c -> c.getSubject().toLowerCase().contains(courseSubject.toLowerCase()))
+                .filter(c -> c.getPercentAudited() >= percentAudited)
+                .filter(c -> c.getTotalHours() <= totalCourseHours)
+                .collect(Collectors.toList());
+        Collections.sort(filteredCourses, Comparator.comparing(Course::getTitle));
+        List<String> result = new ArrayList<>();
+        for (Course c : filteredCourses) {
+            String title = c.getTitle();
+            if (!result.contains(title)) {
+                result.add(title);
+            }
+        }
+        return result;
     }
 
     //6
     public List<String> recommendCourses(int age, int gender, int isBachelorOrHigher) {
-        return null;
+        Map<String, Double> medianAgeMap = new HashMap<>();
+        Map<String, Double> malePercentageMap = new HashMap<>();
+        Map<String, Double> bachelorPercentageMap = new HashMap<>();
+        for (Course course : courses) {
+            String courseNumber = course.getNumber();
+            double medianAge = course.getMedianAge();
+            double malePercentage = course.getPercentMale();
+            double bachelorPercentage = course.getPercentDegree();
+
+            medianAgeMap.put(courseNumber,
+                    medianAgeMap.getOrDefault(courseNumber, 0.0) + medianAge);
+            malePercentageMap.put(courseNumber,
+                    malePercentageMap.getOrDefault(courseNumber, 0.0) + malePercentage);
+            bachelorPercentageMap.put(courseNumber,
+                    bachelorPercentageMap.getOrDefault(courseNumber, 0.0) + bachelorPercentage);
+        }
+        for (String courseNumber : medianAgeMap.keySet()) {
+            int count = 0;
+            for (Course course : courses) {
+                if (course.getNumber().equals(courseNumber)) {
+                    count++;
+                }
+            }
+            medianAgeMap.put(courseNumber,
+                    medianAgeMap.get(courseNumber) / count);
+            malePercentageMap.put(courseNumber,
+                    malePercentageMap.get(courseNumber) / count);
+            bachelorPercentageMap.put(courseNumber,
+                    bachelorPercentageMap.get(courseNumber) / count);
+        }
+            Map<String, Double> similarityValueMap = new HashMap<>();
+
+            for (String courseNumber : medianAgeMap.keySet()) {
+                double avgMedianAge = medianAgeMap.get(courseNumber);
+                double avgMalePercentage = malePercentageMap.get(courseNumber);
+                double avgBachelorPercentage = bachelorPercentageMap.get(courseNumber);
+
+                double similarityValue = Math.pow(age - avgMedianAge, 2)
+                        + Math.pow(gender * 100 - avgMalePercentage, 2)
+                        + Math.pow(isBachelorOrHigher * 100 - avgBachelorPercentage, 2);
+
+                similarityValueMap.put(courseNumber, similarityValue);
+            }
+            List<String> recommendedCourses = new ArrayList<>();
+
+            Map<String, Course> courseNumberToCourse = new HashMap<>();
+            Map<String, Date> courseNumberToEarliestLaunchDate = new HashMap<>();
+
+            for (Course course : courses) {
+                String courseNumber = course.getNumber();
+                Date launchDate = course.getLaunchDate();
+
+                if (!courseNumberToEarliestLaunchDate.containsKey(courseNumber)
+                        || launchDate.after(courseNumberToEarliestLaunchDate.get(courseNumber))) {
+                    courseNumberToCourse.put(courseNumber, course);
+                    courseNumberToEarliestLaunchDate.put(courseNumber, launchDate);
+                }
+            }
+
+            List<Course> courseEarliestLaunch = new ArrayList<>(courseNumberToCourse.values());
+
+            courseEarliestLaunch
+                    .sort(Comparator.comparingDouble((Course c) -> similarityValueMap.get(c.getNumber())).thenComparing(Course::getTitle));
+
+            for (Course course : courseEarliestLaunch) {
+                if (recommendedCourses.size() >= 10) {
+                    break;
+                }
+                String title = course.getTitle();
+                if (!recommendedCourses.contains(title)) {
+                    recommendedCourses.add(title);
+                }
+            }
+            return recommendedCourses;
     }
 
 }
 
 class Course {
     String institution;
+
     String number;
+
+
     Date launchDate;
 
     String title;
@@ -149,6 +238,7 @@ class Course {
     int participants;
     int audited;
     int certified;
+
     double percentAudited;
     double percentCertified;
     double percentCertified50;
@@ -159,6 +249,7 @@ class Course {
 
     double totalHours;
     double medianHoursCertification;
+
     double medianAge;
     double percentMale;
     double percentFemale;
@@ -206,6 +297,9 @@ class Course {
     public String getInstitution() {
         return institution;
     }
+    public String getNumber() {
+        return number;
+    }
     public int getParticipants() {
         return participants;
     }
@@ -218,9 +312,26 @@ class Course {
     public String getTitle() {
         return title;
     }
+    public Date getLaunchDate() {
+        return launchDate;
+    }
     public double getTotalHours() {
         return totalHours;
     }
+    public double getPercentAudited() {
+        return percentAudited;
+    }
+    public double getMedianAge() {
+        return medianAge;
+    }
+    public double getPercentMale() {
+        return percentMale;
+    }
+    public double getPercentDegree() {
+        return percentDegree;
+    }
+
+
     public static int compareByIns(Course c1, Course c2) {
         return c1.institution.compareTo(c2.institution);
     }
