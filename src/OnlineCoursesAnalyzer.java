@@ -5,8 +5,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static java.lang.Double.compare;
 
 public class OnlineCoursesAnalyzer {
 
@@ -96,7 +99,26 @@ public class OnlineCoursesAnalyzer {
 
     //4
     public List<String> getCourses(int topK, String by) {
-        return null;
+        List<Course> totalResults = null;
+        if (by.equals("hours")) {
+            totalResults = courses.stream()
+                    .sorted(Comparator.comparingDouble(Course::getTotalHours).reversed().thenComparing(Course::getTitle))
+                    .toList();
+        } else if (by.equals("participants")) {
+            totalResults = courses.stream()
+                    .sorted(Comparator.comparingDouble(Course::getParticipants).reversed().thenComparing(Course::getTitle))
+                    .toList();
+        }
+        List<String> result = new ArrayList<>();
+        int size = 0;
+        for (int i = 0; size < topK && i < totalResults.size(); i++) {
+            String title = totalResults.get(i).getTitle();
+            if (!result.contains(title)) {
+                result.add(totalResults.get(i).getTitle());
+            }
+            size = result.size();
+        }
+        return result;
     }
 
     //5
@@ -133,6 +155,8 @@ class Course {
     double percentVideo;
     double percentForum;
     double gradeHigherZero;
+
+
     double totalHours;
     double medianHoursCertification;
     double medianAge;
@@ -193,6 +217,9 @@ class Course {
     }
     public String getTitle() {
         return title;
+    }
+    public double getTotalHours() {
+        return totalHours;
     }
     public static int compareByIns(Course c1, Course c2) {
         return c1.institution.compareTo(c2.institution);
