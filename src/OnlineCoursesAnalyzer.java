@@ -1,6 +1,4 @@
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -45,12 +43,14 @@ public class OnlineCoursesAnalyzer {
         }
     }
 
-    public static void main(String[] args){
-        String local = "D:\\IDEAproject\\OnlineCoursesAnalyzer\\resources\\local.csv";
-        OnlineCoursesAnalyzer coursesAnalyzer = new OnlineCoursesAnalyzer(local);
-        Map<String, List<List<String>>> test = coursesAnalyzer.getCourseListOfInstructor();
-        System.out.println(test);
-    }
+//    public static void main(String[] args){
+//        String local = "D:\\IDEAproject\\OnlineCoursesAnalyzer\\resources\\local.csv";
+//        OnlineCoursesAnalyzer coursesAnalyzer = new OnlineCoursesAnalyzer(local);
+//        Map<String, List<List<String>>> test = coursesAnalyzer.getCourseListOfInstructor();
+//        List<String> result = coursesAnalyzer.recommendCourses(40, 1, 1);
+//        System.out.println(result);
+//    }
+
     //1
     public Map<String, Integer> getPtcpCountByInst() {
         Stream<Course> courseStream = courses.stream();
@@ -84,9 +84,13 @@ public class OnlineCoursesAnalyzer {
             for (String instructor : instructors) {
                 result.putIfAbsent(instructor, new ArrayList<>(Arrays.asList(new ArrayList<>(), new ArrayList<>())));
                 if (course.isIndependentlyResponsible()) {
-                    result.get(instructor).get(0).add(course.getTitle());
+                    if (!result.get(instructor).get(0).contains(course.getTitle())) {
+                        result.get(instructor).get(0).add(course.getTitle());
+                    }
                 } else {
-                    result.get(instructor).get(1).add(course.getTitle());
+                    if (!result.get(instructor).get(1).contains(course.getTitle())){
+                        result.get(instructor).get(1).add(course.getTitle());
+                    }
                 }
             }
         }
